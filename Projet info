@@ -1,8 +1,15 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Nov 17 11:26:50 2020
+
+@author: amaurychesne
+"""
+
 import pandas as pd
 import numpy as np
 from numpy import *
 import matplotlib.pyplot as plt
-
 
 
 
@@ -86,6 +93,16 @@ def humidex(T,rosee):
         H.append(T[i]+0.5555*(6.11*np.exp(a)-10))
     return H
 
+def correlation(a,b):
+    a1=tri_int(temps_trier,a,temps)
+    b1=tri_int(temps_trier,b,temps)
+    co=0
+    for i in range (0,len(a1)):
+             co=co+a1[i]*b1[i]
+    co=co/len(a1) - (moy(a1)*moy(b1))
+    co=co/(ecart_t(a1)*ecart_t(b1))
+    return co
+
 def tri_capteur(cap,don):
     cap1=[]
     cap2=[]
@@ -109,9 +126,15 @@ def tri_capteur(cap,don):
     return cap1,cap2,cap3,cap4,cap5,cap6
 
                 
-result=pd.read_csv("EIVP_KM.csv",sep=';',names=["id", "noise", "temp", "humidity", "lum", "co2", "date", "hour"], header=0)
+result=pd.read_csv("EIVP_KM.csv",sep=';')
 t=result['sent_at'].tolist()
 temps_trier=tri_liste(t)
+co=result['co2'].tolist()
+lum=result['lum'].tolist()
+bruit=result['noise'].tolist()
+capteur=result['id'].tolist()
+temperature=result['temp'].tolist()
+humidity=result['humidity'].tolist()
 
 date=str(input("voulez vous rentrer une date de début et de fin ?"))
 if date =='oui':   
@@ -123,30 +146,51 @@ else:
     
 data1=str(input('Quelle donnée voulez vous regarder entre bruit, température, humidité, lumière et co2 ?' ))    
 if data1 == 'bruit':
-    data= 'noise'
+    data= bruit
 if data1== 'température':
-    data ='temp'
+    data = temperature
 if data1 == 'humidité':
-    data = 'humidity'
+    data = humidity
 if data1 == 'lumière':
-    data = 'lum'
+    data = lum
 if data1 =='co2':
-    data='co2'
+    data= co
+
+data1er=str(input('Quelle première donnée voulez vous regarder entre bruit, température, humidité, lumière et co2 pour l indice de corélation ?' ))
+if data1er == 'bruit':
+    data_1= bruit
+if data1er== 'température':
+    data_1 =temperature
+if data1er == 'humidité':
+    data_1 = humidity
+if data1er == 'lumière':
+    data_1 = lum
+if data1er =='co2':
+    data_1 = co
     
-data_all=result[data].tolist()
+data2eme=str(input('Quelle seconde donnée voulez vous regarder entre bruit, température, humidité, lumière et co2 pour l indice de corélation ?' ))
+if data2eme == 'bruit':
+    data_2= bruit
+if data2eme== 'température':
+    data_2 = temperature
+if data2eme == 'humidité':
+    data_2 = humidity
+if data2eme == 'lumière':
+    data_2 = lum
+if data2eme =='co2':
+    data_2 = co
+    
+   
 temps=inter(temps_trier,h_debut,h_fin)
-data_int=tri_int(t,data_all,temps)
+data_int=tri_int(t,data,temps)
 
-humidity=result['humidity'].tolist()
+
 humidity_trier=tri_int(temps_trier,humidity,temps)
-temperature=result['temp'].tolist()
-tempe_trier=tri_int(temps_trier,temperature,temps)
-Trosee=T_rosee(tempe_trier,humidity_trier)
 
-co=result['co2'].tolist()
-lum=result['lum'].tolist()
-bruit=result['noise'].tolist()
-capteur=result['id'].tolist()
+tempe_trier=tri_int(temps_trier,temperature,temps)
+Trose=T_rosee(tempe_trier,humidity_trier)
+
+
 
 cap_bruit=tri_capteur(capteur,bruit)
 cap_temperature=tri_capteur(capteur,temperature)
@@ -154,11 +198,32 @@ cap_humidite=tri_capteur(capteur,humidity)
 cap_lumiere=tri_capteur(capteur,lum)
 cap_co=tri_capteur(capteur,co)
 
-plt.plot(temps,data_int,label=data1)
+plt.plot(temps,data_int,label=data1, color='blue')
+y2=[maxi(data_int) for k in range(len(temps))] 
+y3=[mini(data_int) for j in range(len(temps))]
+l2=plt.plot(temps,y2 , ls='--', color='red')
+l3=plt.plot(temps,y3 , ls='--', color='green')
+plt.title('Titre')
+plt.xlabel('Temps')
+plt.ylabel('data')
+plt.legend()
+plt.figlegend((l2, l3), ('Maximum', 'Minimum'), 'upper left')
+plt.tight_layout()
 plt.legend()
 plt.show()
 plt.close()
-plt.plot(temps,humidex(tempe_trier,Trosee),label="humidex")
+plt.plot(temps,humidex(tempe_trier,Trose),label="humidex")
+y2=[maxi(humidex(tempe_trier,Trose)) for k in range(len(temps))] 
+y3=[mini(humidex(tempe_trier,Trose)) for k in range(len(temps))]
+l2=plt.plot(temps,y2 , ls='--')
+l3=plt.plot(temps,y3 , ls='--')
+plt.title('Humidex en fonction du temps')
+plt.xlabel('Temps')
+plt.ylabel('Humidex')
+plt.legend()
+plt.figlegend((l2, l3), ('Maximum', 'Minimum'), 'upper left')
+plt.tight_layout()
 plt.legend()
 plt.show()
 plt.close()
+print(correlation(data_1,data_2))
