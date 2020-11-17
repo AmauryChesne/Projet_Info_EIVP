@@ -1,0 +1,164 @@
+import pandas as pd
+import numpy as np
+from numpy import *
+import matplotlib.pyplot as plt
+
+
+
+
+def tri_liste(liste):
+    L = list(liste) 
+    N = len(L)
+    for n in range(1,N):
+        cle = L[n]
+        j = n-1
+        while j>=0 and L[j] > cle:
+            L[j+1] = L[j] 
+            j = j-1
+        L[j+1] = cle
+    return L
+
+def inter(liste,debut,fin):
+    debut=debut+'00:00:00 +0200'
+    fin=fin+'23:59:59 +0200'
+    L=[]
+    for i in liste:
+        if i>=debut and i<=fin:
+            L.append(i)
+    return L
+
+def tri_int(a,b,c):
+        L=[]
+        j=0
+        for i in c:
+            while a[j] != i :
+                j=j+1
+            L.append(b[j])
+            j=0
+        return L
+    
+def maxi(liste):
+    maxi = liste[0]
+    for i in liste:
+        if i >= maxi:
+            maxi = i
+    return maxi
+
+def mini(liste):
+    mini = liste[0]
+    for i in liste:
+        if i <= mini:
+            mini = i
+    return mini
+
+def med(l):
+    if len(l) % 2 == 0 :
+        return (l[int(len(l)/2)]+l[int(len(l)/2 +1)])/2
+    else:
+        return l[int((len(l))//2 +1)]
+
+def moy(l):
+    a=0
+    for i in l:
+        a=a+i
+    return a/len(l)
+
+def variance(l):
+    va=0
+    for i in l:
+        va=va +(i-moy(l))**2
+    return va/len(l)
+
+def ecart_t(l):
+    return variance(l)**0.5
+
+def T_rosee(l,h):
+    L=[]
+    for i in range (0,len(l)):
+        a=(17.27*l[i])/(237.7+l[i])+np.log(h[i]/100)
+        L.append((237.7*a)/(17.27-a))
+    return L
+
+def humidex(T,rosee):
+    H=[]
+    for i in range (0,len(T)):
+        a=5417.7530*(1/273.16-1/(273.16+rosee[i]))
+        H.append(T[i]+0.5555*(6.11*np.exp(a)-10))
+    return H
+
+def tri_capteur(cap,don):
+    cap1=[]
+    cap2=[]
+    cap3=[]
+    cap4=[]
+    cap5=[]
+    cap6=[]
+    for i in range (0,len(cap)):
+        if cap[i]==1:
+            cap1.append(don[i])
+        if cap[i]==2:
+                cap2.append(don[i])
+        if cap[i]==3:
+            cap3.append(don[i])
+        if cap[i]==4:
+            cap4.append(don[i])
+        if cap[i]==5:
+            cap5.append(don[i])
+        else:
+            cap6.append(don[i])
+    return cap1,cap2,cap3,cap4,cap5,cap6
+
+                
+result=pd.read_csv("EIVP_KM.csv",sep=';',names=["id", "noise", "temp", "humidity", "lum", "co2", "date", "hour"], header=0)
+t=result['sent_at'].tolist()
+temps_trier=tri_liste(t)
+
+date=str(input("voulez vous rentrer une date de début et de fin ?"))
+if date =='oui':   
+   h_debut=str(input("entrer la date de début"))
+   h_fin=str(input("entrer la date de fin"))
+else:
+    h_debut=temps_trier[0]
+    h_fin=temps_trier[-1]
+    
+data1=str(input('Quelle donnée voulez vous regarder entre bruit, température, humidité, lumière et co2 ?' ))    
+if data1 == 'bruit':
+    data= 'noise'
+if data1== 'température':
+    data ='temp'
+if data1 == 'humidité':
+    data = 'humidity'
+if data1 == 'lumière':
+    data = 'lum'
+if data1 =='co2':
+    data='co2'
+    
+data_all=result[data].tolist()
+temps=inter(temps_trier,h_debut,h_fin)
+data_int=tri_int(t,data_all,temps)
+
+humidity=result['humidity'].tolist()
+humidity_trier=tri_int(temps_trier,humidity,temps)
+temperature=result['temp'].tolist()
+tempe_trier=tri_int(temps_trier,temperature,temps)
+Trosee=T_rosee(tempe_trier,humidity_trier)
+
+co=result['co2'].tolist()
+lum=result['lum'].tolist()
+bruit=result['noise'].tolist()
+capteur=result['id'].tolist()
+
+cap_bruit=tri_capteur(capteur,bruit)
+cap_temperature=tri_capteur(capteur,temperature)
+cap_humidite=tri_capteur(capteur,humidity)
+cap_lumiere=tri_capteur(capteur,lum)
+cap_co=tri_capteur(capteur,co)
+
+plt.plot(temps,data_int,label=data1)
+plt.legend()
+plt.show()
+plt.close()
+plt.plot(temps,humidex(tempe_trier,Trosee),label="humidex")
+plt.legend()
+plt.show()
+plt.close()
